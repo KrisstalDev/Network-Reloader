@@ -4,11 +4,21 @@
 local module = {}
 
 local function V3toSTR(v:Vector3):string
-	return "\\V"..tostring(v.X).."/"..tostring(v.Y).."/"..tostring(v.Z)
+	local result = string.pack("fff", v.X, v.Y, v.Z)
+	
+	-- Without this, the JSON conversion will result in an error
+	result = buffer.tostring(game:GetService("EncodingService"):Base64Encode(buffer.fromstring(result)))
+	
+	return "\\V3"..result
 end
 
 local function V2toSTR(v:Vector2):string
-	return "\\V"..tostring(v.X).."/"..tostring(v.Y)
+	local result = string.pack("ff", v.X, v.Y)
+	
+	-- Without this, the JSON conversion will result in an error
+	result = buffer.tostring(game:GetService("EncodingService"):Base64Encode(buffer.fromstring(result)))
+
+	return "\\V2"..result
 end
 
 local function V3toBUF(v:Vector3):buffer
@@ -101,8 +111,11 @@ function module.DecompressVector(val:buffer|string, buffers:boolean):Vector3|Vec
 	if typeof(val) == "buffer" then
 		return if buffer.len(val) == 13 then BUFtoV3(val) else BUFtoV2(val)
 	else
-		local args = val:sub(3, #val):split("/")
-		return if #args == 2 then Vector2.new(tonumber(args[1]), tonumber(args[2])) else Vector3.new(tonumber(args[1]), tonumber(args[2]), tonumber(args[3]))
+		-- Don't forget the encoding
+		local result = buffer.tostring(game:GetService("EncodingService"):Base64Decode(buffer.fromstring(val:sub(4, #val))))
+		local args:{number|any} = table.pack(string.unpack(if val:sub(3, 3) == "3" then "fff" else "ff", result))
+		
+		return if #args == 3 then Vector2.new(tonumber(args[1]), tonumber(args[2])) else Vector3.new(tonumber(args[1]), tonumber(args[2]), tonumber(args[3]))
 	end
 end
 

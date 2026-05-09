@@ -1,3 +1,6 @@
+--!native
+--!strict
+
 --[=[
 
 	Made by Krisstal (KrisstalDev).
@@ -12,8 +15,6 @@
 	
 	This module is intended to be a "reloader" or "reviver" for situations with high network usage.
 	This module is a wrapper, so you don't have to remake something in order to make it work.
-	
-	Go to line 129 if you want to test its effectiveness.
 	
 ]=]
 
@@ -37,7 +38,7 @@ export type Parameters = {
 		StringBrickColors:boolean,
 		StringCFrames:boolean,
 		BufferCFrames:boolean,
-		JsonBuffers:boolean,
+		JsonBuffers:boolean
 	}
 }
 
@@ -60,10 +61,10 @@ function module.requestOut(parameters:Parameters, ...)
 	local leftovers = {}
 	local leftoversCount = 0
 	
-	local function processTable(tbl:{[any]:any}, leftoversTable:{}):{[any]:any}
+	local function processTable(tbl:{any}, leftoversTable:{any}):{any}
 		local newTable = {}
 		
-		for i, v in pairs(tbl) do
+		for i:number|any, v in pairs(tbl) do
 			local vType = typeof(v)
 			
 			if vType == "table" then
@@ -99,7 +100,9 @@ function module.requestOut(parameters:Parameters, ...)
 				
 				newTable[i] = "\\LOF"
 				
-				if typeof(i) == "number" then i = "\\N"..tostring(i) end
+				if typeof(i) == "number" then
+					i = "\\N"..tostring(i)
+				end
 				
 				leftoversCount += 1
 				leftoversTable[i] = if typeof(v) == "table" then leftoversTable[i] else v
@@ -136,7 +139,7 @@ function module.requestOut(parameters:Parameters, ...)
 	return parameters, result, if parameters.SendCompressionLeftovers then leftovers else nil
 end
 
-function module.requestIn(parameters:Parameters, result:{[any]:any}, leftovers:{[any]:any})
+function module.requestIn(parameters:Parameters, result:{any}, leftovers:{any})
 	local request:{any}
 	
 	if parameters.Enabled.LZWCompression then
@@ -171,18 +174,18 @@ function module.requestIn(parameters:Parameters, result:{[any]:any}, leftovers:{
 	end
 	
 	local function processTable(tbl:{[any]:any})
-		for i, v in pairs(tbl) do
+		for i, v:any in pairs(tbl) do
 			if typeof(v) == "table" then
 				v = processTable(v)
 			elseif typeof(v) == "string" then
 				if parameters.Enabled.Referencer and #v >= 2 and v:sub(1, 2) == "\\R" then
 					v = MReferencer.processIn(v:sub(3, #v), parameters.ReferencerUsePath)
-				elseif parameters.Enabled.StringVectors and #v >= 7 and v:sub(1, 2) == "\\V" then
+				elseif parameters.Enabled.StringVectors and #v >= 4 and v:sub(1, 2) == "\\V" then
 					v = MVectorCompressor.DecompressVector(v, false)
 				elseif parameters.Enabled.HexColor3 and #v == 6 and tonumber(v, 16) then
 					v = Color3.fromHex(v)
 				elseif parameters.Enabled.StringBrickColors and #v >= 3 and v:sub(1, 2) == "\\B" then
-					v = BrickColor.new(tonumber(v:sub(3, #v)))
+					v = BrickColor.new(tonumber(v:sub(3, #v)) :: number)
 				elseif parameters.Enabled.StringCFrames and #v >= 3 and v:sub(1, 2) == "\\C" then
 					v = MVectorCompressor.DecompressCFrame(v, false)
 				elseif parameters.Enabled.JsonBuffers and #v >= 4 and v:sub(1, 3) == "\\JB" then
